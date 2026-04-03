@@ -1,0 +1,6 @@
+[submodule "simple-evals"]
+	path = simple-evals
+	url = https://github.com/sunghyuckhong/simple-evals.git
+[submodule "IFBench"]
+	path = IFBench
+	url = https://github.com/jeongin-yun/IFBench.git

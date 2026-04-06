@@ -1,8 +1,8 @@
 #!/bin/bash
-set -e
 
-MODEL="furiosa-ai/K-EXAONE-236B-A23B-NVFP4A16-GPTQ-think-token-fix8"
-RESULTS_DIR="/workspace/k-exaone-eval/simple-evals/results"
+# MODEL="furiosa-ai/K-EXAONE-236B-A23B-NVFP4A16-GPTQ-think-token-fix8"
+MODEL="LGAI-EXAONE/K-EXAONE-236B-A23B-FP8"
+RESULTS_DIR="$(cd "$(dirname "$0")" && pwd)/simple-evals/results"
 NUM_RUNS=8
 
 # Snapshot existing files before runs
@@ -30,6 +30,11 @@ for i in $(seq 1 $NUM_RUNS); do
         --extra_body '{"chat_template_kwargs": {"enable_thinking": true}}' \
         --n-threads 8 \
         --n-repeats 1
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        echo "!!! Run $i FAILED (exit code: $rc) - $(date)"
+        exit $rc
+    fi
 
     echo ">>> Run $i completed - $(date)"
 done

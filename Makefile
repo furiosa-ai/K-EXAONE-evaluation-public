@@ -195,6 +195,14 @@ test-all: test-gpqa test-aime25 test-ifbench test-tau2 ## Run all smoke tests
 # Utilities
 # =============================================================================
 
+.PHONY: report
+report: ## Generate unified evaluation report
+	@$(ACTIVATE) && python scripts/report.py
+
+.PHONY: report-json
+report-json: ## Generate report in JSON format
+	@$(ACTIVATE) && python scripts/report.py --json
+
 .PHONY: clean
 clean: ## Remove venv (will NOT touch results or submodules)
 	rm -rf $(VENV)

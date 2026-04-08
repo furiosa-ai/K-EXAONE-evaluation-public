@@ -71,29 +71,39 @@ def collect_aime25(project_root):
 def collect_ifbench(project_root):
     """Collect IFBench results grouped by model."""
     eval_dir = project_root / "IFBench" / "eval"
-    run_dirs = sorted(glob.glob(str(eval_dir / "run*")))
 
     by_model = defaultdict(lambda: {"strict": [], "loose": []})
-    for run_dir in run_dirs:
-        # Try to detect model from response filename
-        model = "unknown"
-        for f in glob.glob(os.path.join(run_dir, "*.jsonl")):
-            base = os.path.basename(f)
-            if "eval_results" not in base and base != "responses.jsonl":
-                # e.g., K-EXAONE-236B-...-responses.jsonl
-                model = base.replace("-responses.jsonl", "").replace("_responses.jsonl", "")
-                break
 
-        for mode in ["strict", "loose"]:
-            pattern = os.path.join(run_dir, f"*eval_results_{mode}.jsonl")
-            files = glob.glob(pattern)
-            for f in files:
-                data = [json.loads(line) for line in open(f)]
-                if not data:
-                    continue
-                total = len(data)
-                passed = sum(1 for d in data if d.get("follow_all_instructions"))
-                by_model[model][mode].append(passed / total * 100)
+    # New structure: eval/{model}/run{N}/
+    for model_dir in sorted(eval_dir.iterdir()) if eval_dir.exists() else []:
+        if not model_dir.is_dir() or model_dir.name in ("test",):
+            continue
+
+        run_dirs = sorted(glob.glob(str(model_dir / "run*")))
+        if run_dirs:
+            # eval/{model}/run{N}/ structure
+            model = model_dir.name
+            for run_dir in run_dirs:
+                for mode in ["strict", "loose"]:
+                    for f in glob.glob(os.path.join(run_dir, f"*eval_results_{mode}.jsonl")):
+                        data = [json.loads(line) for line in open(f)]
+                        if data:
+                            total = len(data)
+                            passed = sum(1 for d in data if d.get("follow_all_instructions"))
+                            by_model[model][mode].append(passed / total * 100)
+
+    # Legacy structure: eval/run{N}/ (no model dir)
+    legacy_runs = sorted(glob.glob(str(eval_dir / "run*")))
+    if legacy_runs:
+        model = "unknown"
+        for run_dir in legacy_runs:
+            for mode in ["strict", "loose"]:
+                for f in glob.glob(os.path.join(run_dir, f"*eval_results_{mode}.jsonl")):
+                    data = [json.loads(line) for line in open(f)]
+                    if data:
+                        total = len(data)
+                        passed = sum(1 for d in data if d.get("follow_all_instructions"))
+                        by_model[model][mode].append(passed / total * 100)
 
     return dict(by_model)
 

@@ -7,7 +7,8 @@ source "${SCRIPT_DIR}/config.sh"
 
 NUM_RUNS="${NUM_RUNS:-5}"
 IFBENCH_DIR="${PROJECT_ROOT}/IFBench"
-EVAL_BASE="${IFBENCH_DIR}/eval"
+MODEL_SHORT="${MODEL##*/}"  # strip org prefix: a/b -> b
+EVAL_BASE="${IFBENCH_DIR}/eval/${MODEL_SHORT}"
 
 echo "============================================"
 echo "IFBench Evaluation - ${NUM_RUNS} runs"
@@ -60,7 +61,7 @@ import json, math
 
 accs = []
 for i in range(1, ${NUM_RUNS} + 1):
-    path = f'eval/run{i}/responses-eval_results_loose.jsonl'
+    path = f'eval/${MODEL_SHORT}/run{i}/responses-eval_results_loose.jsonl'
     try:
         data = [json.loads(l) for l in open(path)]
     except FileNotFoundError:

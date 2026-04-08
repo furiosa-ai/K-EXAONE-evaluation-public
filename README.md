@@ -154,7 +154,7 @@ MODEL=my-org/my-model make run-gpqa
 |-----------|----------|
 | GPQA | `simple-evals/results/` |
 | AIME25 | `results/aime25/` |
-| IFBench | `IFBench/eval/run{N}/` |
+| IFBench | `IFBench/eval/{model}/run{N}/` |
 | Tau2 | `tau2-bench/data/simulations/` |
 
 모든 스크립트는 실행 완료 후 자동으로 mean/std 요약을 출력한다.

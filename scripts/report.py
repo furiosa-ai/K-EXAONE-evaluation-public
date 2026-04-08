@@ -34,7 +34,7 @@ def collect_gpqa(project_root):
         model = extract_model_from_gpqa_filename(f)
         with open(f) as fp:
             data = json.load(fp)
-        by_model[model].append(data.get("score", 0))
+        by_model[model].append(data.get("score", 0) * 100)
 
     return dict(by_model)
 
@@ -63,7 +63,7 @@ def collect_aime25(project_root):
         aime = results.get("aime25", results.get("aime_25", {}))
         score = aime.get("exact_match,none", aime.get("exact_match", None))
         if score is not None:
-            by_model[model].append(score)
+            by_model[model].append(score * 100)
 
     return dict(by_model)
 
@@ -133,19 +133,19 @@ def collect_tau2(project_root):
                 rewards = [s["reward_info"]["reward"] for s in sims
                           if s.get("reward_info") and s["reward_info"].get("reward") is not None]
                 if rewards:
-                    by_model[model][domain].append(sum(rewards) / len(rewards))
+                    by_model[model][domain].append(sum(rewards) / len(rewards) * 100)
                 break
 
     return {m: dict(d) for m, d in by_model.items()}
 
 
 def fmt_stats(scores):
-    """Format mean ± std."""
+    """Format mean ± std (all values in %)."""
     if not scores:
         return "N/A", "N/A", "N/A", 0
     mean = sum(scores) / len(scores)
     std = math.sqrt(sum((s - mean) ** 2 for s in scores) / len(scores)) if len(scores) > 1 else 0
-    return f"{mean:.4f}", f"{std:.4f}", f"{mean:.4f} ± {std:.4f}", len(scores)
+    return f"{mean:.2f}%", f"{std:.2f}%", f"{mean:.2f} ± {std:.2f}%", len(scores)
 
 
 def print_section(title):
@@ -216,7 +216,7 @@ def print_model_report(model, entry):
         print(f"  Runs:   {r['n']}")
         print(f"  Score:  {r['mean']} ± {r['std']}")
         for i, s in enumerate(r["scores"], 1):
-            print(f"    Run {i}: {s:.4f}")
+            print(f"    Run {i}: {s:.2f}%")
     else:
         print("  No results found")
 
@@ -227,7 +227,7 @@ def print_model_report(model, entry):
         print(f"  Runs:          {r['n']}")
         print(f"  exact_match:   {r['mean']} ± {r['std']}")
         for i, s in enumerate(r["scores"], 1):
-            print(f"    Run {i}: {s:.4f}")
+            print(f"    Run {i}: {s:.2f}%")
     else:
         print("  No results found")
 
@@ -240,7 +240,7 @@ def print_model_report(model, entry):
             has_ifbench = True
             print(f"  [{mode}]")
             print(f"    Runs:     {r['n']}")
-            print(f"    Accuracy: {r['mean']} ± {r['std']}%")
+            print(f"    Accuracy: {r['mean']} ± {r['std']}")
             for i, s in enumerate(r["scores"], 1):
                 print(f"      Run {i}: {s:.2f}%")
     if not has_ifbench:
@@ -254,12 +254,12 @@ def print_model_report(model, entry):
         r = entry["tau2"][domain]
         if r["n"]:
             has_tau2 = True
-            domain_means.append(float(r["mean"]))
+            domain_means.append(float(r["mean"].rstrip("%")))
             print(f"  [{domain}]")
             print(f"    Runs:   {r['n']}")
             print(f"    Score:  {r['mean']} ± {r['std']}")
     if domain_means:
-        print(f"\n  Overall:  {sum(domain_means) / len(domain_means):.4f}")
+        print(f"\n  Overall:  {sum(domain_means) / len(domain_means):.2f}%")
     if not has_tau2:
         print("  No results found")
 

@@ -43,7 +43,7 @@ K-EXAONE-evaluation/
 
 **API Key 설정:**
 
-GPQA grading(gpt-4.1)과 Tau2 user simulator(gpt-4.1)에 OpenAI API key가 필요하다.
+GPQA 와 Tau2 user simulator(gpt-4.1)에 OpenAI API key가 필요하다.
 
 ```bash
 # 셸 환경변수로 설정 (.bashrc, .zshrc 등에 추가)
@@ -171,15 +171,15 @@ make report-json     # JSON 포맷으로 출력
 출력 예시:
 ```
   Summary
-  ============================================================
+  ──────────────────────────────────────────────────
   Benchmark              N       Mean        Std
-  --------------------------------------------------
-  GPQA                   8     0.7200     0.0312
-  AIME25                35     0.8200     0.0150
+  ──────────────────────────────────────────────────
+  GPQA                   8    72.00%      3.12%
+  AIME25                35    82.00%      1.50%
   IFBench (loose)        5    72.30%      1.20%
-  Tau2 (airline)         5     0.7420     0.0201
-  Tau2 (retail)          5     0.8250     0.0087
-  Tau2 (telecom)         5     0.7654     0.0180
+  Tau2 (airline)         5    74.20%      2.01%
+  Tau2 (retail)          5    82.50%      0.87%
+  Tau2 (telecom)         5    76.54%      1.80%
 ```
 
 ## Smoke Tests

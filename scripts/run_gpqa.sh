@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/config.sh"
 
 NUM_RUNS="${NUM_RUNS:-8}"
 RESULTS_DIR="${PROJECT_ROOT}/simple-evals/results"
+mkdir -p "${RESULTS_DIR}"
 
 # Snapshot existing files before runs
 BEFORE_FILES=$(mktemp)

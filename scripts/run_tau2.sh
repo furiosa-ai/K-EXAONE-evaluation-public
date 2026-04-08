@@ -7,7 +7,7 @@ source "${SCRIPT_DIR}/config.sh"
 
 NUM_RUNS="${NUM_RUNS:-5}"
 NUM_TRIALS="${NUM_TRIALS:-4}"
-MAX_CONCURRENCY="${MAX_CONCURRENCY:-50}"
+MAX_CONCURRENCY="${MAX_CONCURRENCY:-8}"
 USER_LLM="${USER_LLM:-gpt-4.1}"
 DOMAINS="${DOMAINS:-airline retail telecom}"
 TAU2_DIR="${PROJECT_ROOT}/tau2-bench"

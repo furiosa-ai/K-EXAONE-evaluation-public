@@ -75,12 +75,25 @@ make setup-tau2          # tau2-bench 의존성
 ### 2. vLLM 서버 시작
 
 모든 벤치마크는 vLLM 서버에 요청을 보내는 구조이다.
+서버를 먼저 띄운 뒤, 별도 터미널에서 벤치마크를 실행한다.
 
 ```bash
-# 터미널 1: vLLM 서버 시작
+# 터미널 1: vLLM 서버 시작 (foreground로 실행됨)
 make vllm-serve
 
-# 서버 상태 확인
+# 또는 직접 실행
+source .venv/bin/activate
+vllm serve LGAI-EXAONE/K-EXAONE-236B-A23B-FP8 \
+    --reasoning-parser deepseek_v3 \
+    --tensor-parallel-size 8 \
+    --enable-auto-tool-choice \
+    --tool-call-parser hermes \
+    --max-model-len 131072 \
+    --max-num-seqs 8
+```
+
+```bash
+# 터미널 2: 서버 상태 확인
 make vllm-check
 ```
 
@@ -129,7 +142,7 @@ MODEL=my-org/my-model make run-gpqa
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
 | `NUM_TRIALS` | `4` | tau2 `--num-trials` (태스크당 시행 횟수) |
-| `MAX_CONCURRENCY` | `50` | 동시 실행 수 |
+| `MAX_CONCURRENCY` | `8` | 동시 실행 수 |
 | `USER_LLM` | `gpt-4.1` | 유저 시뮬레이터 모델 |
 | `DOMAINS` | `airline retail telecom` | 평가 도메인 |
 
@@ -145,6 +158,29 @@ MODEL=my-org/my-model make run-gpqa
 | Tau2 | `tau2-bench/data/simulations/` |
 
 모든 스크립트는 실행 완료 후 자동으로 mean/std 요약을 출력한다.
+
+### 통합 리포트
+
+전체 벤치마크 결과를 한눈에 확인할 수 있다.
+
+```bash
+make report          # 터미널에 요약 출력
+make report-json     # JSON 포맷으로 출력
+```
+
+출력 예시:
+```
+  Summary
+  ============================================================
+  Benchmark              N       Mean        Std
+  --------------------------------------------------
+  GPQA                   8     0.7200     0.0312
+  AIME25                35     0.8200     0.0150
+  IFBench (loose)        5    72.30%      1.20%
+  Tau2 (airline)         5     0.7420     0.0201
+  Tau2 (retail)          5     0.8250     0.0087
+  Tau2 (telecom)         5     0.7654     0.0180
+```
 
 ## Smoke Tests
 

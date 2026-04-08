@@ -2,9 +2,12 @@
 set -euo pipefail
 trap 'echo "ERROR: Script failed at line $LINENO (exit code $?)" >&2' ERR
 
-MODEL="furiosa-ai/K-EXAONE-236B-A23B-NVFP4A16-GPTQ-think-token-fix8"
-RESULTS_DIR="./results"
-NUM_RUNS=35
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "${SCRIPT_DIR}/config.sh"
+
+NUM_RUNS="${NUM_RUNS:-35}"
+RESULTS_DIR="${PROJECT_ROOT}/results/aime25"
+mkdir -p "${RESULTS_DIR}"
 
 # Snapshot existing result files before runs
 BEFORE_FILES=$(mktemp)
@@ -23,11 +26,11 @@ for i in $(seq 1 $NUM_RUNS); do
 
     python -m lm_eval \
         --model local-chat-completions \
-        --model_args "model=${MODEL},base_url=http://localhost:8000/v1/chat/completions,tokenized_requests=False,tokenizer_backend=None,max_length=131072,num_concurrent=8,timeout=36000" \
+        --model_args "model=${MODEL},base_url=${BASE_URL}/chat/completions,tokenized_requests=False,tokenizer_backend=None,max_length=131072,num_concurrent=8,timeout=36000" \
         --tasks aime25 \
         --batch_size 1 \
         --num_fewshot 0 \
-        --gen_kwargs '{"temperature":1.0,"top_p":0.95,"max_gen_toks":120000,"n":1,"chat_template_kwargs":{"enable_thinking":true}}' \
+        --gen_kwargs '{"temperature":'"${TEMPERATURE}"',"top_p":'"${TOP_P}"',"max_gen_toks":120000,"n":1,"chat_template_kwargs":{"enable_thinking":true}}' \
         --write_out \
         --log_samples \
         --output_path "${RESULTS_DIR}/aime25_run_${i}" \
@@ -74,7 +77,6 @@ for idx, f in enumerate(sorted(files), 1):
     score = aime.get("exact_match,none", aime.get("exact_match", 0))
     scores.append(score)
 
-    # Extract run directory name for display
     run_name = os.path.basename(os.path.dirname(os.path.dirname(f)))
     print(f"{idx:<4} {run_name:<30} {score:<12.4f}")
 

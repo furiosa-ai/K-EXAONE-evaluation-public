@@ -1,4 +1,12 @@
 venv/
+.venv/
 __pycache__/
 *.pyc
 .env
+
+# Results
+results/
+*.log
+
+# NLTK data
+.nltk_data/

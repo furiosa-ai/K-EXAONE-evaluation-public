@@ -1,9 +1,12 @@
 #!/bin/bash
+set -euo pipefail
+trap 'echo "ERROR: Script failed at line $LINENO (exit code $?)" >&2' ERR
 
-# MODEL="furiosa-ai/K-EXAONE-236B-A23B-NVFP4A16-GPTQ-think-token-fix8"
-MODEL="LGAI-EXAONE/K-EXAONE-236B-A23B-FP8"
-RESULTS_DIR="$(cd "$(dirname "$0")" && pwd)/simple-evals/results"
-NUM_RUNS=8
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "${SCRIPT_DIR}/config.sh"
+
+NUM_RUNS="${NUM_RUNS:-8}"
+RESULTS_DIR="${PROJECT_ROOT}/simple-evals/results"
 
 # Snapshot existing files before runs
 BEFORE_FILES=$(mktemp)
@@ -15,6 +18,8 @@ echo "Model: ${MODEL}"
 echo "Start: $(date)"
 echo "============================================"
 
+cd "${PROJECT_ROOT}"
+
 for i in $(seq 1 $NUM_RUNS); do
     echo ""
     echo ">>> Run $i / $NUM_RUNS - $(date)"
@@ -24,17 +29,14 @@ for i in $(seq 1 $NUM_RUNS); do
         --eval gpqa \
         --model "$MODEL" \
         --custom \
-        --temperature 1.0 \
-        --top_p 0.95 \
+        --base_url "${BASE_URL}" \
+        --temperature "${TEMPERATURE}" \
+        --top_p "${TOP_P}" \
         --max_tokens None \
         --extra_body '{"chat_template_kwargs": {"enable_thinking": true}}' \
         --n-threads 8 \
-        --n-repeats 1
-    rc=$?
-    if [ $rc -ne 0 ]; then
-        echo "!!! Run $i FAILED (exit code: $rc) - $(date)"
-        exit $rc
-    fi
+        --n-repeats 1 \
+    || { echo "!!! Run $i FAILED (exit code: $?) - $(date)"; exit 1; }
 
     echo ">>> Run $i completed - $(date)"
 done
@@ -54,7 +56,7 @@ rm -f "$BEFORE_FILES" "$AFTER_FILES"
 # Summarize results
 echo "Summarizing results (this session only)..."
 python3 - $NEW_FILES <<'PYEOF'
-import json, sys, statistics
+import json, sys, statistics, os
 
 files = sys.argv[1:]
 if not files:
@@ -69,7 +71,6 @@ print(f"{'#':<4} {'Date/Time':<20} {'Score':<10} {'Chars':<10}")
 print(f"{'-'*60}")
 
 for idx, f in enumerate(sorted(files), 1):
-    import os
     with open(f) as fp:
         data = json.load(fp)
     score = data.get("score", 0)

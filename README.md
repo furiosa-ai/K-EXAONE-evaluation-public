@@ -43,7 +43,7 @@ K-EXAONE-evaluation/
 
 **API Key 설정:**
 
-GPQA grading(gpt-4.1)과 Tau2 user simulator(gpt-4.1)에 OpenAI API key가 필요하다.
+GPQA 와 Tau2 user simulator(gpt-4.1)에 OpenAI API key가 필요하다.
 
 ```bash
 # 셸 환경변수로 설정 (.bashrc, .zshrc 등에 추가)

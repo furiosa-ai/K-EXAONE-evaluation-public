@@ -75,12 +75,25 @@ make setup-tau2          # tau2-bench 의존성
 ### 2. vLLM 서버 시작
 
 모든 벤치마크는 vLLM 서버에 요청을 보내는 구조이다.
+서버를 먼저 띄운 뒤, 별도 터미널에서 벤치마크를 실행한다.
 
 ```bash
-# 터미널 1: vLLM 서버 시작
+# 터미널 1: vLLM 서버 시작 (foreground로 실행됨)
 make vllm-serve
 
-# 서버 상태 확인
+# 또는 직접 실행
+source .venv/bin/activate
+vllm serve LGAI-EXAONE/K-EXAONE-236B-A23B-FP8 \
+    --reasoning-parser deepseek_v3 \
+    --tensor-parallel-size 8 \
+    --enable-auto-tool-choice \
+    --tool-call-parser hermes \
+    --max-model-len 131072 \
+    --max-num-seqs 8
+```
+
+```bash
+# 터미널 2: 서버 상태 확인
 make vllm-check
 ```
 

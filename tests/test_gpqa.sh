@@ -11,6 +11,7 @@ echo "Model: ${MODEL}"
 echo "============================================"
 
 cd "${PROJECT_ROOT}"
+mkdir -p simple-evals/results
 
 python -m simple-evals.simple_evals \
     --eval gpqa \

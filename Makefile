@@ -49,8 +49,8 @@ help: ## Show this help
 	@echo "  K-EXAONE Evaluation"
 	@echo "  ==================="
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*## .*$$' $(MAKEFILE_LIST) | sed 's/:.*## /:## /' | \
+		awk 'BEGIN {FS = ":## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 
 .PHONY: check-uv
@@ -76,21 +76,20 @@ setup: setup-base setup-lm-eval setup-simple-evals setup-ifbench setup-tau2 ## F
 .PHONY: setup-base
 setup-base: $(VENV)/.setup-done ## Install base dependencies (vllm, transformers)
 	@echo "$(GREEN)>>> Installing base dependencies...$(RESET)"
-	$(ACTIVATE) && uv pip install \
-		"vllm==0.15.1" \
-		"compressed-tensors==0.13.0" \
-		"transformers==5.1.0" \
-		openai pandas jinja2 tqdm numpy requests
+	$(ACTIVATE) && uv pip install "vllm==0.15.1"
+	$(ACTIVATE) && uv pip install "compressed-tensors==0.13.0"
+	$(ACTIVATE) && uv pip install "transformers==5.1.0"
+	$(ACTIVATE) && uv pip install openai pandas jinja2 tqdm numpy requests
 
 .PHONY: setup-lm-eval
 setup-lm-eval: $(VENV)/.setup-done ## Install lm-evaluation-harness (for AIME25)
 	@echo "$(GREEN)>>> Installing lm-evaluation-harness...$(RESET)"
-	$(ACTIVATE) && uv pip install lm-eval
+	$(ACTIVATE) && uv pip install "lm-eval[api]"
 
 .PHONY: setup-simple-evals
 setup-simple-evals: $(VENV)/.setup-done ## Install simple-evals dependencies (for GPQA)
 	@echo "$(GREEN)>>> Installing simple-evals dependencies...$(RESET)"
-	$(ACTIVATE) && uv pip install openai pandas jinja2 tqdm numpy
+	$(ACTIVATE) && uv pip install openai pandas jinja2 tqdm numpy blobfile human-eval
 
 .PHONY: setup-ifbench
 setup-ifbench: $(VENV)/.setup-done ## Install IFBench dependencies

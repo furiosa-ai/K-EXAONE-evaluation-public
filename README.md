@@ -142,7 +142,7 @@ MODEL=my-org/my-model make run-gpqa
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
 | `NUM_TRIALS` | `4` | tau2 `--num-trials` (태스크당 시행 횟수) |
-| `MAX_CONCURRENCY` | `50` | 동시 실행 수 |
+| `MAX_CONCURRENCY` | `8` | 동시 실행 수 |
 | `USER_LLM` | `gpt-4.1` | 유저 시뮬레이터 모델 |
 | `DOMAINS` | `airline retail telecom` | 평가 도메인 |
 

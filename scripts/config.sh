@@ -7,7 +7,7 @@
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Model
-MODEL="${MODEL:-LGAI-EXAONE/K-EXAONE-236B-A23B-FP8}"
+MODEL="${MODEL:-LGAI-EXAONE/K-EXAONE-236B-A23B}"
 
 # vLLM server
 VLLM_HOST="${VLLM_HOST:-localhost}"

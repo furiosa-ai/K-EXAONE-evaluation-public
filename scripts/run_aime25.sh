@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
 
 NUM_RUNS="${NUM_RUNS:-35}"
+MAX_CONCURRENCY="${MAX_CONCURRENCY:-128}"
 RESULTS_DIR="${PROJECT_ROOT}/results/aime25"
 mkdir -p "${RESULTS_DIR}"
 
@@ -26,7 +27,7 @@ for i in $(seq 1 $NUM_RUNS); do
 
     python -m lm_eval \
         --model local-chat-completions \
-        --model_args "model=${MODEL},base_url=${BASE_URL}/chat/completions,tokenized_requests=False,tokenizer_backend=None,max_length=131072,num_concurrent=8,timeout=36000" \
+        --model_args "model=${MODEL},base_url=${BASE_URL}/chat/completions,tokenized_requests=False,tokenizer_backend=None,max_length=131072,num_concurrent=${MAX_CONCURRENCY},timeout=36000" \
         --tasks aime25 \
         --batch_size 1 \
         --num_fewshot 0 \

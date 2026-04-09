@@ -164,6 +164,9 @@ run-tau2: vllm-check ## Run Tau2 benchmark (airline, retail, telecom)
 .PHONY: run-all
 run-all: run-gpqa run-aime25 run-ifbench run-tau2 ## Run all benchmarks
 
+.PHONY: run-all-except-tau2
+run-all-except-tau2: run-gpqa run-aime25 run-ifbench ## Run all benchmarks except Tau2
+
 # =============================================================================
 # Smoke Tests (minimal runs to verify setup)
 # =============================================================================

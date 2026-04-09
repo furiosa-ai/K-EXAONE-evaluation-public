@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
 
 NUM_RUNS="${NUM_RUNS:-5}"
+MAX_CONCURRENCY="${MAX_CONCURRENCY:-128}"
 IFBENCH_DIR="${PROJECT_ROOT}/IFBench"
 MODEL_SHORT="${MODEL##*/}"  # strip org prefix: a/b -> b
 EVAL_BASE="${IFBENCH_DIR}/eval/${MODEL_SHORT}"
@@ -36,7 +37,7 @@ for i in $(seq 1 $NUM_RUNS); do
         --temperature "${TEMPERATURE}" \
         --top-p "${TOP_P}" \
         --max-tokens 100000 \
-        --workers 8 \
+        --workers "${MAX_CONCURRENCY}" \
         --enable-thinking
 
     NLTK_DATA="${IFBENCH_DIR}/.nltk_data" \

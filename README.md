@@ -89,7 +89,7 @@ vllm serve LGAI-EXAONE/K-EXAONE-236B-A23B-FP8 \
     --enable-auto-tool-choice \
     --tool-call-parser hermes \
     --max-model-len 131072 \
-    --max-num-seqs 8
+    --max-num-seqs 128
 ```
 
 ```bash
@@ -120,6 +120,7 @@ make run-all
 NUM_RUNS=3 make run-gpqa          # GPQA 3회만
 NUM_RUNS=10 make run-aime25       # AIME25 10회
 NUM_RUNS=2 make run-tau2          # Tau2 도메인별 2회
+MAX_CONCURRENCY=64 make run-gpqa  # 동시 요청 64개로 제한
 MODEL=my-org/my-model make run-gpqa
 ```
 
@@ -129,12 +130,13 @@ MODEL=my-org/my-model make run-gpqa
 
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
-| `MODEL` | `LGAI-EXAONE/K-EXAONE-236B-A23B-FP8` | 평가 대상 모델 |
+| `MODEL` | `LGAI-EXAONE/K-EXAONE-236B-A23B` | 평가 대상 모델 |
 | `VLLM_HOST` | `localhost` | vLLM 서버 호스트 |
 | `VLLM_PORT` | `8000` | vLLM 서버 포트 |
 | `TEMPERATURE` | `1.0` | 샘플링 temperature |
 | `TOP_P` | `0.95` | Top-p sampling |
 | `NUM_RUNS` | 벤치마크별 상이 | 반복 실행 횟수 |
+| `MAX_CONCURRENCY` | `128` | 동시 요청 수 (모든 벤치마크 공통) |
 
 ### 벤치마크별 추가 설정
 
@@ -142,7 +144,6 @@ MODEL=my-org/my-model make run-gpqa
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
 | `NUM_TRIALS` | `4` | tau2 `--num-trials` (태스크당 시행 횟수) |
-| `MAX_CONCURRENCY` | `8` | 동시 실행 수 |
 | `USER_LLM` | `gpt-4.1` | 유저 시뮬레이터 모델 |
 | `DOMAINS` | `airline retail telecom` | 평가 도메인 |
 

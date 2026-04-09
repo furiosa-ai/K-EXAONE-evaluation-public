@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
 
 NUM_RUNS="${NUM_RUNS:-8}"
+MAX_CONCURRENCY="${MAX_CONCURRENCY:-128}"
 RESULTS_DIR="${PROJECT_ROOT}/simple-evals/results"
 mkdir -p "${RESULTS_DIR}"
 
@@ -35,7 +36,7 @@ for i in $(seq 1 $NUM_RUNS); do
         --top_p "${TOP_P}" \
         --max_tokens None \
         --extra_body '{"chat_template_kwargs": {"enable_thinking": true}}' \
-        --n-threads 8 \
+        --n-threads "${MAX_CONCURRENCY}" \
         --n-repeats 1 \
     || { echo "!!! Run $i FAILED (exit code: $?) - $(date)"; exit 1; }
 

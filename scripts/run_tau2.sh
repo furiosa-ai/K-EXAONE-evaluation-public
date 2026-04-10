@@ -1,6 +1,5 @@
 #!/bin/bash
 set -euo pipefail
-trap 'echo "ERROR: Script failed at line $LINENO (exit code $?)" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
@@ -12,9 +11,26 @@ USER_LLM="${USER_LLM:-gpt-4.1}"
 DOMAINS="${DOMAINS:-airline retail telecom}"
 TAU2_DIR="${PROJECT_ROOT}/tau2-bench"
 
+# Session directory: results/tau2/{MODEL_SHORT}_{YYYYMMDD_HHMMSS}/
+SESSION_DIR="${PROJECT_ROOT}/results/tau2/${SESSION_ID}"
+mkdir -p "${SESSION_DIR}"
+write_session_json "${SESSION_DIR}" "tau2" "${NUM_RUNS}" \
+    '{"num_trials":'"${NUM_TRIALS}"',"user_llm":"'"${USER_LLM}"'","domains":"'"${DOMAINS}"'"}'
+
+# Finalize session on exit
+cleanup() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        finalize_session_json "${SESSION_DIR}" "failed"
+    fi
+}
+trap cleanup EXIT
+
 echo "============================================"
 echo "Tau2 Evaluation - ${NUM_RUNS} runs"
 echo "Model: ${MODEL}"
+echo "Session: ${SESSION_ID}"
+echo "Output: ${SESSION_DIR}"
 echo "Domains: ${DOMAINS}"
 echo "Trials per domain: ${NUM_TRIALS}"
 echo "User LLM: ${USER_LLM}"
@@ -23,6 +39,7 @@ echo "============================================"
 
 cd "${TAU2_DIR}"
 
+COMPLETED=0
 for i in $(seq 1 $NUM_RUNS); do
     echo ""
     echo "=========================================="
@@ -34,7 +51,8 @@ for i in $(seq 1 $NUM_RUNS); do
         echo ">>> Run $i - Domain: ${domain} - $(date)"
         echo "--------------------------------------------"
 
-        SAVE_NAME="${MODEL//\//_}_${domain}_run${i}"
+        # Use a temp name with session timestamp to avoid collisions
+        SAVE_NAME="tmp_${SESSION_TS}_${domain}_run${i}"
 
         uv run tau2 run \
             --domain "${domain}" \
@@ -45,11 +63,20 @@ for i in $(seq 1 $NUM_RUNS); do
             --num-trials "${NUM_TRIALS}" \
             --max-concurrency "${MAX_CONCURRENCY}"
 
+        # Move results from native location to session directory
+        NATIVE_DIR="${TAU2_DIR}/data/simulations/${SAVE_NAME}"
+        DEST_DIR="${SESSION_DIR}/${domain}_run_$(printf '%02d' $i)"
+        mv "${NATIVE_DIR}" "${DEST_DIR}"
+
         echo ">>> Run $i - Domain ${domain} completed - $(date)"
     done
 
+    COMPLETED=$i
+    update_session_progress "${SESSION_DIR}" "$COMPLETED"
     echo ">>> Run $i completed - $(date)"
 done
+
+finalize_session_json "${SESSION_DIR}" "completed"
 
 echo ""
 echo "============================================"
@@ -59,24 +86,21 @@ echo ""
 
 # Summarize results
 echo "Summarizing results..."
-python3 - <<'PYEOF'
-import json, os, glob, statistics
+python3 - "${SESSION_DIR}" <<'PYEOF'
+import json, os, glob, statistics, sys
 
-tau2_data = os.path.join(os.getcwd(), "data", "simulations")
-if not os.path.isdir(tau2_data):
-    print("No simulation results found.")
-    exit(0)
+session_dir = sys.argv[1]
 
 # Collect results grouped by domain
 domain_scores = {}
-for result_dir in sorted(glob.glob(os.path.join(tau2_data, "*_run*"))):
+for result_dir in sorted(glob.glob(os.path.join(session_dir, "*_run_*"))):
     result_file = os.path.join(result_dir, "results.json")
     if not os.path.exists(result_file):
         continue
     name = os.path.basename(result_dir)
-    # Extract domain from name: ..._<domain>_run<N>
-    parts = name.rsplit("_run", 1)
-    domain = parts[0].rsplit("_", 1)[-1] if parts else "unknown"
+    # Extract domain from name: {domain}_run_{NN}
+    parts = name.rsplit("_run_", 1)
+    domain = parts[0] if parts else "unknown"
     run_num = parts[1] if len(parts) > 1 else "?"
 
     with open(result_file) as f:

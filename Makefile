@@ -199,12 +199,20 @@ test-all: test-gpqa test-aime25 test-ifbench test-tau2 ## Run all smoke tests
 # =============================================================================
 
 .PHONY: report
-report: ## Generate unified evaluation report
+report: ## Generate unified evaluation report (latest sessions)
+	@$(ACTIVATE) && python scripts/report.py --latest
+
+.PHONY: report-all
+report-all: ## Generate report with all sessions
 	@$(ACTIVATE) && python scripts/report.py
 
+.PHONY: report-legacy
+report-legacy: ## Generate report including legacy result locations
+	@$(ACTIVATE) && python scripts/report.py --legacy
+
 .PHONY: report-json
-report-json: ## Generate report in JSON format
-	@$(ACTIVATE) && python scripts/report.py --json
+report-json: ## Generate report in JSON format (latest sessions)
+	@$(ACTIVATE) && python scripts/report.py --latest --json
 
 .PHONY: clean
 clean: ## Remove venv (will NOT touch results or submodules)

@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/../scripts/config.sh"
 
 IFBENCH_DIR="${PROJECT_ROOT}/IFBench"
-EVAL_DIR="${IFBENCH_DIR}/eval/test"
+EVAL_DIR="${PROJECT_ROOT}/results/_test/ifbench"
 INPUT_FILE="${IFBENCH_DIR}/data/IFBench_test.jsonl"
 INPUT_SUBSET="${EVAL_DIR}/test_subset.jsonl"
 OUTPUT_FILE="${EVAL_DIR}/responses.jsonl"

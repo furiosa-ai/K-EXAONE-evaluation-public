@@ -162,10 +162,10 @@ run-tau2: vllm-check ## Run Tau2 benchmark (airline, retail, telecom)
 	bash scripts/run_tau2.sh
 
 .PHONY: run-all
-run-all: run-gpqa run-aime25 run-ifbench run-tau2 ## Run all benchmarks
+run-all: run-gpqa run-ifbench run-aime25 run-tau2 ## Run all benchmarks
 
 .PHONY: run-all-except-tau2
-run-all-except-tau2: run-gpqa run-aime25 run-ifbench ## Run all benchmarks except Tau2
+run-all-except-tau2: run-gpqa run-ifbench run-aime25 ## Run all benchmarks except Tau2
 
 # =============================================================================
 # Smoke Tests (minimal runs to verify setup)
@@ -218,6 +218,11 @@ report-json: ## Generate report in JSON format (latest sessions)
 clean: ## Remove venv (will NOT touch results or submodules)
 	rm -rf $(VENV)
 	@echo "$(GREEN)Cleaned .venv$(RESET)"
+
+.PHONY: clean-test
+clean-test: ## Remove smoke test results
+	rm -rf results/_test/ tau2-bench/data/simulations/test_smoke
+	@echo "$(GREEN)Cleaned test results$(RESET)"
 
 .PHONY: status
 status: ## Show current configuration

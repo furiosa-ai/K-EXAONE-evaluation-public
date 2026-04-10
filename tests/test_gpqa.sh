@@ -11,7 +11,9 @@ echo "Model: ${MODEL}"
 echo "============================================"
 
 cd "${PROJECT_ROOT}"
-mkdir -p simple-evals/results
+
+TEST_DIR="${PROJECT_ROOT}/results/_test/gpqa"
+mkdir -p "${TEST_DIR}"
 
 python -m simple-evals.simple_evals \
     --eval gpqa \
@@ -24,6 +26,7 @@ python -m simple-evals.simple_evals \
     --extra_body '{"chat_template_kwargs": {"enable_thinking": true}}' \
     --n-threads 4 \
     --n-repeats 1 \
+    --output_dir "${TEST_DIR}" \
     --debug
 
 echo "[TEST] GPQA passed"

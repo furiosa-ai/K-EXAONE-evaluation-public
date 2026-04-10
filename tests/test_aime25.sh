@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/../scripts/config.sh"
 
-RESULTS_DIR="${PROJECT_ROOT}/results/aime25_test"
+RESULTS_DIR="${PROJECT_ROOT}/results/_test/aime25"
 mkdir -p "${RESULTS_DIR}"
 
 echo "============================================"

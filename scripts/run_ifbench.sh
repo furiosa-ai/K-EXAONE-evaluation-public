@@ -50,7 +50,7 @@ for i in $(seq 1 $NUM_RUNS); do
         --output-file "$OUTPUT_FILE" \
         --temperature "${TEMPERATURE}" \
         --top-p "${TOP_P}" \
-        --max-tokens 100000 \
+        --max-tokens 65536 \
         --workers "${MAX_CONCURRENCY}" \
         --enable-thinking
 

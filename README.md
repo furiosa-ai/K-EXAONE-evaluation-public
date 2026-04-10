@@ -214,9 +214,12 @@ make test-aime25    # AIME25: 2 samples
 make test-ifbench   # IFBench: 5 prompts
 make test-tau2      # Tau2: airline, 1 trial, 2 tasks
 make test-all       # 전체 smoke test
+make clean-test     # 테스트 결과 일괄 삭제
 ```
 
-## Makefile 타겟 목록
+테스트 결과는 `results/_test/`에 저장된다 (Tau2는 `tau2-bench/data/simulations/test_smoke/`).
+
+## 주요 명령어
 
 ```bash
 make help          # 전체 타겟 목록 확인
@@ -226,4 +229,5 @@ make report-all    # 모든 세션 통합 리포트
 make report-legacy # 기존 경로 결과 포함 리포트
 make report-json   # JSON 포맷 리포트
 make clean         # .venv 삭제 (결과 파일은 보존)
+make clean-test    # 테스트 결과 삭제
 ```

@@ -19,11 +19,17 @@ K-EXAONE-evaluation/
 ├── Makefile                  # setup / 서버 / 벤치마크 실행
 ├── evaluation_reference.md   # 벤치마크별 커맨드 레퍼런스
 ├── scripts/
-│   ├── config.sh             # 공통 설정 (MODEL, BASE_URL, TEMPERATURE 등)
+│   ├── config.sh             # 공통 설정 (MODEL, BASE_URL, SESSION 등)
+│   ├── report.py             # 통합 리포트 생성
 │   ├── run_gpqa.sh           # GPQA N회 반복
 │   ├── run_aime25.sh         # AIME25 N회 반복
 │   ├── run_ifbench.sh        # IFBench N회 반복
 │   └── run_tau2.sh           # Tau2 3개 도메인 x N회 반복
+├── results/                  # 통합 결과 디렉토리
+│   ├── gpqa/                 #   {MODEL}_{TIMESTAMP}/ 세션별 저장
+│   ├── aime25/
+│   ├── ifbench/
+│   └── tau2/
 ├── tests/                    # Smoke tests (setup 검증용)
 │   ├── README.md
 │   ├── test_gpqa.sh
@@ -137,6 +143,7 @@ MODEL=my-org/my-model make run-gpqa
 | `TOP_P` | `0.95` | Top-p sampling |
 | `NUM_RUNS` | 벤치마크별 상이 | 반복 실행 횟수 |
 | `MAX_CONCURRENCY` | `128` | 동시 요청 수 (모든 벤치마크 공통) |
+| `SESSION_TS` | 자동 생성 (`YYYYMMDD_HHMMSS`) | 세션 타임스탬프 (수동 지정 시 결과 경로 고정) |
 
 ### 벤치마크별 추가 설정
 
@@ -149,14 +156,17 @@ MODEL=my-org/my-model make run-gpqa
 
 ## 결과
 
-각 벤치마크의 결과는 다음 경로에 저장된다:
+모든 벤치마크 결과는 통합된 `results/` 디렉토리에 세션 단위로 저장된다.
+각 세션은 `{모델명}_{타임스탬프}` 형식의 디렉토리로 구분되며, 재실행 시 이전 결과를 덮어쓰지 않는다.
 
 | Benchmark | 결과 경로 |
 |-----------|----------|
-| GPQA | `simple-evals/results/` |
-| AIME25 | `results/aime25/` |
-| IFBench | `IFBench/eval/{model}/run{N}/` |
-| Tau2 | `tau2-bench/data/simulations/` |
+| GPQA | `results/gpqa/{MODEL_SHORT}_{TIMESTAMP}/` |
+| AIME25 | `results/aime25/{MODEL_SHORT}_{TIMESTAMP}/` |
+| IFBench | `results/ifbench/{MODEL_SHORT}_{TIMESTAMP}/` |
+| Tau2 | `results/tau2/{MODEL_SHORT}_{TIMESTAMP}/` |
+
+각 세션 디렉토리에는 `session.json` 메타데이터(모델, 설정, 상태, 진행 상황)가 포함된다.
 
 모든 스크립트는 실행 완료 후 자동으로 mean/std 요약을 출력한다.
 
@@ -165,13 +175,23 @@ MODEL=my-org/my-model make run-gpqa
 전체 벤치마크 결과를 한눈에 확인할 수 있다.
 
 ```bash
-make report          # 터미널에 요약 출력
+make report          # 최신 세션 기준 요약 출력
+make report-all      # 모든 세션 통합 요약
+make report-legacy   # 기존 경로 결과도 포함
 make report-json     # JSON 포맷으로 출력
+```
+
+모델/세션별 필터링:
+```bash
+python scripts/report.py --model K-EXAONE       # 특정 모델만
+python scripts/report.py --session 20260410      # 특정 세션만
+python scripts/report.py --latest --json         # 최신 세션, JSON 출력
 ```
 
 출력 예시:
 ```
-  Summary
+  Model: K-EXAONE-236B-A23B
+  Session: K-EXAONE-236B-A23B_20260410_143000 [aime25] completed (35/35 runs)
   ──────────────────────────────────────────────────
   Benchmark              N       Mean        Std
   ──────────────────────────────────────────────────
@@ -199,7 +219,11 @@ make test-all       # 전체 smoke test
 ## Makefile 타겟 목록
 
 ```bash
-make help    # 전체 타겟 목록 확인
-make status  # 현재 설정 및 submodule 상태 확인
-make clean   # .venv 삭제 (결과 파일은 보존)
+make help          # 전체 타겟 목록 확인
+make status        # 현재 설정 및 submodule 상태 확인
+make report        # 최신 세션 기준 통합 리포트
+make report-all    # 모든 세션 통합 리포트
+make report-legacy # 기존 경로 결과 포함 리포트
+make report-json   # JSON 포맷 리포트
+make clean         # .venv 삭제 (결과 파일은 보존)
 ```

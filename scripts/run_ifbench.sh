@@ -1,6 +1,5 @@
 #!/bin/bash
 set -euo pipefail
-trap 'echo "ERROR: Script failed at line $LINENO (exit code $?)" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
@@ -8,12 +7,26 @@ source "${SCRIPT_DIR}/config.sh"
 NUM_RUNS="${NUM_RUNS:-5}"
 MAX_CONCURRENCY="${MAX_CONCURRENCY:-128}"
 IFBENCH_DIR="${PROJECT_ROOT}/IFBench"
-MODEL_SHORT="${MODEL##*/}"  # strip org prefix: a/b -> b
-EVAL_BASE="${IFBENCH_DIR}/eval/${MODEL_SHORT}"
+
+# Session directory: results/ifbench/{MODEL_SHORT}_{YYYYMMDD_HHMMSS}/
+SESSION_DIR="${PROJECT_ROOT}/results/ifbench/${SESSION_ID}"
+mkdir -p "${SESSION_DIR}"
+write_session_json "${SESSION_DIR}" "ifbench" "${NUM_RUNS}"
+
+# Finalize session on exit
+cleanup() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        finalize_session_json "${SESSION_DIR}" "failed"
+    fi
+}
+trap cleanup EXIT
 
 echo "============================================"
 echo "IFBench Evaluation - ${NUM_RUNS} runs"
 echo "Model: ${MODEL}"
+echo "Session: ${SESSION_ID}"
+echo "Output: ${SESSION_DIR}"
 echo "Start: $(date)"
 echo "============================================"
 
@@ -24,8 +37,9 @@ for i in $(seq 1 $NUM_RUNS); do
     echo ">>> Run $i / $NUM_RUNS - $(date)"
     echo "--------------------------------------------"
 
-    OUTPUT_FILE="${EVAL_BASE}/run${i}/responses.jsonl"
-    EVAL_DIR="${EVAL_BASE}/run${i}"
+    RUN_NUM="$(printf '%02d' $i)"
+    EVAL_DIR="${SESSION_DIR}/run_${RUN_NUM}"
+    OUTPUT_FILE="${EVAL_DIR}/responses.jsonl"
     mkdir -p "$EVAL_DIR"
 
     NLTK_DATA="${IFBENCH_DIR}/.nltk_data" \
@@ -46,8 +60,11 @@ for i in $(seq 1 $NUM_RUNS); do
         --input_response_data="$OUTPUT_FILE" \
         --output_dir="$EVAL_DIR"
 
+    update_session_progress "${SESSION_DIR}" "$i"
     echo ">>> Run $i completed - $(date)"
 done
+
+finalize_session_json "${SESSION_DIR}" "completed"
 
 echo ""
 echo "============================================"
@@ -62,7 +79,7 @@ import json, math
 
 accs = []
 for i in range(1, ${NUM_RUNS} + 1):
-    path = f'eval/${MODEL_SHORT}/run{i}/responses-eval_results_loose.jsonl'
+    path = '${SESSION_DIR}/run_{:02d}/responses-eval_results_loose.jsonl'.format(i)
     try:
         data = [json.loads(l) for l in open(path)]
     except FileNotFoundError:

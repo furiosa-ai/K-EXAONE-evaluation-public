@@ -1,22 +1,31 @@
 #!/bin/bash
 set -euo pipefail
-trap 'echo "ERROR: Script failed at line $LINENO (exit code $?)" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
 
 NUM_RUNS="${NUM_RUNS:-35}"
 MAX_CONCURRENCY="${MAX_CONCURRENCY:-128}"
-RESULTS_DIR="${PROJECT_ROOT}/results/aime25"
-mkdir -p "${RESULTS_DIR}"
 
-# Snapshot existing result files before runs
-BEFORE_FILES=$(mktemp)
-find "${RESULTS_DIR}" -name "results_*.json" 2>/dev/null | sort > "$BEFORE_FILES"
+# Session directory: results/aime25/{MODEL_SHORT}_{YYYYMMDD_HHMMSS}/
+SESSION_DIR="${PROJECT_ROOT}/results/aime25/${SESSION_ID}"
+mkdir -p "${SESSION_DIR}"
+write_session_json "${SESSION_DIR}" "aime25" "${NUM_RUNS}"
+
+# Finalize session on exit
+cleanup() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        finalize_session_json "${SESSION_DIR}" "failed"
+    fi
+}
+trap cleanup EXIT
 
 echo "============================================"
 echo "AIME25 Evaluation - ${NUM_RUNS} runs"
 echo "Model: ${MODEL}"
+echo "Session: ${SESSION_ID}"
+echo "Output: ${SESSION_DIR}"
 echo "Start: $(date)"
 echo "============================================"
 
@@ -24,6 +33,8 @@ for i in $(seq 1 $NUM_RUNS); do
     echo ""
     echo ">>> Run $i / $NUM_RUNS - $(date)"
     echo "--------------------------------------------"
+
+    RUN_DIR="${SESSION_DIR}/run_$(printf '%02d' $i)"
 
     python -m lm_eval \
         --model local-chat-completions \
@@ -34,11 +45,14 @@ for i in $(seq 1 $NUM_RUNS); do
         --gen_kwargs '{"temperature":'"${TEMPERATURE}"',"top_p":'"${TOP_P}"',"max_gen_toks":120000,"n":1,"chat_template_kwargs":{"enable_thinking":true}}' \
         --write_out \
         --log_samples \
-        --output_path "${RESULTS_DIR}/aime25_run_${i}" \
+        --output_path "${RUN_DIR}" \
         --apply_chat_template
 
+    update_session_progress "${SESSION_DIR}" "$i"
     echo ">>> Run $i completed - $(date)"
 done
+
+finalize_session_json "${SESSION_DIR}" "completed"
 
 echo ""
 echo "============================================"
@@ -46,25 +60,21 @@ echo "All ${NUM_RUNS} runs completed - $(date)"
 echo "============================================"
 echo ""
 
-# Collect only new result files created during this session
-AFTER_FILES=$(mktemp)
-find "${RESULTS_DIR}" -name "results_*.json" 2>/dev/null | sort > "$AFTER_FILES"
-NEW_FILES=$(comm -13 "$BEFORE_FILES" "$AFTER_FILES" || true)
-rm -f "$BEFORE_FILES" "$AFTER_FILES"
-
 # Summarize results
-echo "Summarizing results (this session only)..."
-python3 - $NEW_FILES <<'PYEOF'
-import json, sys, statistics, os
+echo "Summarizing results..."
+python3 - "${SESSION_DIR}" <<'PYEOF'
+import json, sys, statistics, os, glob
 
-files = sys.argv[1:]
+session_dir = sys.argv[1]
+files = sorted(glob.glob(os.path.join(session_dir, "**/results_*.json"), recursive=True))
+
 if not files:
-    print("No new result files found!")
+    print("No result files found!")
     sys.exit(1)
 
 scores = []
 print(f"\n{'='*60}")
-print(f"  AIME25 Results Summary (this session)")
+print(f"  AIME25 Results Summary")
 print(f"{'='*60}")
 print(f"{'#':<4} {'Run':<30} {'exact_match':<12}")
 print(f"{'-'*60}")

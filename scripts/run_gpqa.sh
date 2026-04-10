@@ -1,22 +1,31 @@
 #!/bin/bash
 set -euo pipefail
-trap 'echo "ERROR: Script failed at line $LINENO (exit code $?)" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
 
 NUM_RUNS="${NUM_RUNS:-8}"
 MAX_CONCURRENCY="${MAX_CONCURRENCY:-128}"
-RESULTS_DIR="${PROJECT_ROOT}/simple-evals/results"
-mkdir -p "${RESULTS_DIR}"
 
-# Snapshot existing files before runs
-BEFORE_FILES=$(mktemp)
-ls "${RESULTS_DIR}"/*.json 2>/dev/null | sort > "$BEFORE_FILES"
+# Session directory: results/gpqa/{MODEL_SHORT}_{YYYYMMDD_HHMMSS}/
+SESSION_DIR="${PROJECT_ROOT}/results/gpqa/${SESSION_ID}"
+mkdir -p "${SESSION_DIR}"
+write_session_json "${SESSION_DIR}" "gpqa" "${NUM_RUNS}"
+
+# Finalize session on exit
+cleanup() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        finalize_session_json "${SESSION_DIR}" "failed"
+    fi
+}
+trap cleanup EXIT
 
 echo "============================================"
 echo "GPQA Evaluation - ${NUM_RUNS} runs"
 echo "Model: ${MODEL}"
+echo "Session: ${SESSION_ID}"
+echo "Output: ${SESSION_DIR}"
 echo "Start: $(date)"
 echo "============================================"
 
@@ -38,10 +47,14 @@ for i in $(seq 1 $NUM_RUNS); do
         --extra_body '{"chat_template_kwargs": {"enable_thinking": true}}' \
         --n-threads "${MAX_CONCURRENCY}" \
         --n-repeats 1 \
+        --output_dir "${SESSION_DIR}" \
     || { echo "!!! Run $i FAILED (exit code: $?) - $(date)"; exit 1; }
 
+    update_session_progress "${SESSION_DIR}" "$i"
     echo ">>> Run $i completed - $(date)"
 done
+
+finalize_session_json "${SESSION_DIR}" "completed"
 
 echo ""
 echo "============================================"
@@ -49,25 +62,22 @@ echo "All ${NUM_RUNS} runs completed - $(date)"
 echo "============================================"
 echo ""
 
-# Collect only new files
-AFTER_FILES=$(mktemp)
-ls "${RESULTS_DIR}"/*.json 2>/dev/null | sort > "$AFTER_FILES"
-NEW_FILES=$(comm -13 "$BEFORE_FILES" "$AFTER_FILES" | grep -v "_allresults" || true)
-rm -f "$BEFORE_FILES" "$AFTER_FILES"
-
 # Summarize results
-echo "Summarizing results (this session only)..."
-python3 - $NEW_FILES <<'PYEOF'
-import json, sys, statistics, os
+echo "Summarizing results..."
+python3 - "${SESSION_DIR}" <<'PYEOF'
+import json, sys, statistics, os, glob
 
-files = sys.argv[1:]
+session_dir = sys.argv[1]
+files = sorted(glob.glob(os.path.join(session_dir, "gpqa_*.json")))
+files = [f for f in files if "_allresults" not in f and "_DEBUG" not in f]
+
 if not files:
-    print("No new result files found!")
+    print("No result files found!")
     sys.exit(1)
 
 scores = []
 print(f"\n{'='*60}")
-print(f"  GPQA Results Summary (this session)")
+print(f"  GPQA Results Summary")
 print(f"{'='*60}")
 print(f"{'#':<4} {'Date/Time':<20} {'Score':<10} {'Chars':<10}")
 print(f"{'-'*60}")
